@@ -11,6 +11,10 @@ void puckxit() {
     exit(EXIT_FAILURE);
 }
 
+char *stringToLower(char *string) {
+    for (char *c = string; *c; c++) *c = tolower(*c);
+    return string;
+}
 /*void my_fflush() {
     char c;
     while ((c = getchar()) != '\n' && c != -1) {
@@ -118,14 +122,14 @@ void max_sales(const char *db_path) {
                &data.minute, &data.second, data.name, &data.price);
         int name_exists = 0;
         for (int j = 0; j < name_amount_cnt; ++j) {
-            if (strcmp(data.name, name_amount[j].name) == 0) {
+            if (strcmp(stringToLower(data.name), name_amount[j].name) == 0) {
                 name_amount[j].amount += data.price;
                 name_exists = 1;
                 break;
             }
         }
         if (!name_exists) {
-            strcpy(name_amount[name_amount_cnt].name, data.name);
+            strcpy(name_amount[name_amount_cnt].name, stringToLower(data.name));
             name_amount[name_amount_cnt].amount = data.price;
             name_amount_cnt++;
         }
@@ -137,8 +141,10 @@ void max_sales(const char *db_path) {
         if (name_amount[i].amount > max_amount) max_amount = name_amount[i].amount;
     }
     for (int i = 0; i < name_amount_cnt; ++i) {
-        if (name_amount[i].amount == max_amount)
+        if (name_amount[i].amount == max_amount) {
+            *(name_amount[i].name) = toupper(*(name_amount[i].name));
             printf("%s %d\n", name_amount[i].name, name_amount[i].amount);
+        }
     }
     free(name_amount);
 }

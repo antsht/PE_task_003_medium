@@ -1,6 +1,7 @@
 #ifndef DATA_H
 #define DATA_H
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +26,8 @@ typedef struct {
     char name[MAX_NAME_LEN];
     int amount;
 } Name_Amount;
+
+char *stringToLower(char *string);
 
 void puckxit();
 
