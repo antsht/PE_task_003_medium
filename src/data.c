@@ -11,16 +11,13 @@ void puckxit() {
     exit(EXIT_FAILURE);
 }
 
+void print_no_data_message() { printf("NO DATA\n"); }
+
 char *stringToLower(char *string) {
     for (char *c = string; *c; c++) *c = tolower(*c);
     return string;
 }
-/*void my_fflush() {
-    char c;
-    while ((c = getchar()) != '\n' && c != -1) {
-        ;
-    }
-}*/
+
 void main_menu_loop(char *db_path) {
     int stop = 0;
     while (!stop) {
@@ -34,19 +31,16 @@ void main_menu_loop(char *db_path) {
         if (strcmp(command, "SHOW") == 0) {
             print_all(db_path);
         } else if (strcmp(command, "ADD") == 0) {
-            // my_fflush();
             Data data;
             if (scanf("%100s %10d", data.name, &data.price) != 2) puckxit();
             add_record_to_file(&data, db_path);
 
         } else if (strcmp(command, "FIND") == 0) {
-            // my_fflush();
             Data data;
             if (scanf("%2d.%2d.%4d", &data.day, &data.month, &data.year) != 3) puckxit();
             int records_found = find_record_by_date(&data, db_path);
-            if (records_found == 0) printf("NO DATA\n");
+            if (records_found == 0) print_no_data_message();
         } else if (strcmp(command, "MAX") == 0) {
-            // my_fflush();
             max_sales(db_path);
         } else if (strcmp(command, "EXIT") == 0)
             stop = 1;
@@ -108,7 +102,7 @@ int find_record_by_date(Data *date_to_find, const char *db_path) {
 void max_sales(const char *db_path) {
     int records_cnt = get_records_count_in_file(db_path);
     if (records_cnt == 0) {
-        puckxit();
+        print_no_data_message();
     }
     Name_Amount *name_amount = (Name_Amount *)malloc(records_cnt * sizeof(Name_Amount));
     int name_amount_cnt = 0;

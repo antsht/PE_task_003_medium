@@ -31,7 +31,7 @@ char *stringToLower(char *string);
 
 void puckxit();
 
-// void my_fflush();
+void print_no_data_message();
 
 void main_menu_loop(char *db_path);
 
