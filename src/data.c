@@ -18,32 +18,50 @@ char *stringToLower(char *string) {
     return string;
 }
 
+int isValidCommand(char *command) {
+    if (strcmp(command, "SHOW") == 0 || strcmp(command, "ADD") == 0 || strcmp(command, "FIND") == 0 ||
+        strcmp(command, "MAX") == 0 || strcmp(command, "EXIT") == 0)
+        return 1;
+    return 0;
+}
+
 void main_menu_loop(char *db_path) {
     int stop = 0;
     while (!stop) {
         char command[BUFFER] = {0};
-
-        if (scanf("%10s", command) != 1 ||
-            !(strcmp(command, "SHOW") == 0 || strcmp(command, "ADD") == 0 || strcmp(command, "FIND") == 0 ||
-              strcmp(command, "MAX") == 0 || strcmp(command, "EXIT") == 0))
+        if (scanf("%10s", command) != 1 || !isValidCommand(command)) {
             puckxit();
+        }
 
         if (strcmp(command, "SHOW") == 0) {
             print_all(db_path);
-        } else if (strcmp(command, "ADD") == 0) {
-            Data data;
-            if (scanf("%100s %10d", data.name, &data.price) != 2) puckxit();
-            add_record_to_file(&data, db_path);
+        }
 
-        } else if (strcmp(command, "FIND") == 0) {
+        if (strcmp(command, "ADD") == 0) {
             Data data;
-            if (scanf("%2d.%2d.%4d", &data.day, &data.month, &data.year) != 3) puckxit();
+            if (scanf("%100s %10d", data.name, &data.price) != 2) {
+                puckxit();
+            }
+            add_record_to_file(&data, db_path);
+        }
+
+        if (strcmp(command, "FIND") == 0) {
+            Data data;
+            if (scanf("%2d.%2d.%4d", &data.day, &data.month, &data.year) != 3) {
+                puckxit();
+            }
             int records_found = find_record_by_date(&data, db_path);
-            if (records_found == 0) print_no_data_message();
-        } else if (strcmp(command, "MAX") == 0) {
+            if (records_found == 0) {
+                print_no_data_message();
+            }
+        }
+        if (strcmp(command, "MAX") == 0) {
             max_sales(db_path);
-        } else if (strcmp(command, "EXIT") == 0)
+        }
+
+        if (strcmp(command, "EXIT") == 0) {
             stop = 1;
+        }
     }
 }
 void check_db_path(char *db_path, const char *filename) {
@@ -63,22 +81,30 @@ FILE *open_file(const char *db_path, const char *mode) {
     return pfile;
 }
 
-void add_record_to_file(Data *data, const char *db_path) {
-    FILE *pfile = open_file(db_path, "a+");
+void set_current_time(Data *data) {
     time_t rawtime;
     struct tm *tm;
     time(&rawtime);
     tm = localtime(&rawtime);
-
     data->day = tm->tm_mday;
     data->month = tm->tm_mon + 1;
     data->year = tm->tm_year + 1900;
     data->hour = tm->tm_hour;
     data->minute = tm->tm_min;
     data->second = tm->tm_sec;
+}
+
+void add_record_to_file(Data *data, const char *db_path) {
+    FILE *pfile = open_file(db_path, "a+");
+    set_current_time(data);
     fprintf(pfile, "%02d.%02d.%04d %02d:%02d:%02d %s %d\n", data->day, data->month, data->year, data->hour,
             data->minute, data->second, data->name, data->price);
     fclose(pfile);
+}
+
+void parse_data_from_string(char *line, Data *data) {
+    sscanf(line, "%2d.%2d.%4d %2d:%2d:%2d %100s %10d", &data->day, &data->month, &data->year, &data->hour,
+           &data->minute, &data->second, data->name, &data->price);
 }
 
 int find_record_by_date(Data *date_to_find, const char *db_path) {
@@ -87,8 +113,7 @@ int find_record_by_date(Data *date_to_find, const char *db_path) {
     char line[BUFFER];
     while (fgets(line, BUFFER - 1, pfile) != NULL) {
         Data data;
-        sscanf(line, "%2d.%2d.%4d %2d:%2d:%2d %100s %10d", &data.day, &data.month, &data.year, &data.hour,
-               &data.minute, &data.second, data.name, &data.price);
+        parse_data_from_string(line, &data);
         if (data.day == date_to_find->day && data.month == date_to_find->month &&
             data.year == date_to_find->year) {
             print_data(data);
@@ -99,23 +124,16 @@ int find_record_by_date(Data *date_to_find, const char *db_path) {
     return records_found;
 }
 
-void max_sales(const char *db_path) {
-    int records_cnt = get_records_count_in_file(db_path);
-    if (records_cnt == 0) {
-        print_no_data_message();
-    }
-    Name_Amount *name_amount = (Name_Amount *)malloc(records_cnt * sizeof(Name_Amount));
-    int name_amount_cnt = 0;
-
+void aggregate_sales_by_name(Name_Amount *name_amount, int *name_amount_cnt, int records_cnt,
+                             const char *db_path) {
     FILE *pfile = open_file(db_path, "r");
     for (int i = 0; i < records_cnt; ++i) {
         char line[BUFFER];
         fgets(line, BUFFER - 1, pfile);
         Data data;
-        sscanf(line, "%2d.%2d.%4d %2d:%2d:%2d %100s %10d", &data.day, &data.month, &data.year, &data.hour,
-               &data.minute, &data.second, data.name, &data.price);
+        parse_data_from_string(line, &data);
         int name_exists = 0;
-        for (int j = 0; j < name_amount_cnt; ++j) {
+        for (int j = 0; j < *name_amount_cnt; ++j) {
             if (strcmp(stringToLower(data.name), name_amount[j].name) == 0) {
                 name_amount[j].amount += data.price;
                 name_exists = 1;
@@ -123,17 +141,31 @@ void max_sales(const char *db_path) {
             }
         }
         if (!name_exists) {
-            strcpy(name_amount[name_amount_cnt].name, stringToLower(data.name));
-            name_amount[name_amount_cnt].amount = data.price;
-            name_amount_cnt++;
+            strcpy(name_amount[*name_amount_cnt].name, stringToLower(data.name));
+            name_amount[*name_amount_cnt].amount = data.price;
+            (*name_amount_cnt)++;
         }
     }
     fclose(pfile);
+}
+
+void max_sales(const char *db_path) {
+    int records_cnt = get_records_count_in_file(db_path);
+    if (records_cnt == 0) {
+        print_no_data_message();
+        return;
+    }
+
+    Name_Amount *name_amount = (Name_Amount *)malloc(records_cnt * sizeof(Name_Amount));
+    int name_amount_cnt = 0;
+
+    aggregate_sales_by_name(name_amount, &name_amount_cnt, records_cnt, db_path);
 
     int max_amount = 0;
     for (int i = 0; i < name_amount_cnt; ++i) {
         if (name_amount[i].amount > max_amount) max_amount = name_amount[i].amount;
     }
+
     for (int i = 0; i < name_amount_cnt; ++i) {
         if (name_amount[i].amount == max_amount) {
             *(name_amount[i].name) = toupper(*(name_amount[i].name));
@@ -166,8 +198,7 @@ void print_all(const char *db_path) {
         char line[BUFFER];
         fgets(line, BUFFER - 1, pfile);
         Data data;
-        sscanf(line, "%2d.%2d.%4d %2d:%2d:%2d %100s %10d", &data.day, &data.month, &data.year, &data.hour,
-               &data.minute, &data.second, data.name, &data.price);
+        parse_data_from_string(line, &data);
         print_data(data);
     }
     fclose(pfile);
