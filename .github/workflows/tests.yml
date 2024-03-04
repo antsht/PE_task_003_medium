@@ -25,7 +25,6 @@ jobs:
 
     - name: Check with clang-format
       run: |
-        cp clang/.clang-format ./
         if [ $(find ./src -name "*.[ch]" -exec clang-format -n {} \; 2>&1 | wc -l) -gt 0 ]; then
             find ./src -name "*.[ch]" -exec clang-format --Werror -n {} \;
             exit 1
