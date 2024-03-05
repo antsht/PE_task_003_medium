@@ -1,10 +1,13 @@
 #ifndef DATA_H
 #define DATA_H
-
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <unistd.h>
+
+#include "errors.h"
 
 #define MAX_RECORDS 1000000
 #define MAX_NAME_LEN 100
@@ -27,34 +30,30 @@ typedef struct {
     int amount;
 } Name_Amount;
 
-char *stringToLower(char *string);
+ErrorCode isValidCommand(char *command);
 
-void puckxit();
+ErrorCode main_menu_loop(char *db_path);
 
-int isValidCommand(char *command);
-
-void print_no_data_message();
-
-void main_menu_loop(char *db_path);
-
-void check_db_path(char *db_path, const char *filename);
+ErrorCode check_db_path(char *db_path, const char *filename);
 
 FILE *open_file(const char *db_path, const char *mode);
 
-void set_current_time(Data *data);
+ErrorCode add_record_to_file(Data *record_to_write, const char *db_path);
 
-void add_record_to_file(Data *record_to_write, const char *db_path);
+ErrorCode find_record_by_date(Data *date_to_find, const char *db_path);
 
-int find_record_by_date(Data *date_to_find, const char *db_path);
+ErrorCode aggregate_sales_by_name(Name_Amount *name_amount, int *name_amount_cnt, int records_cnt,
+                                  const char *db_path);
 
-void aggregate_sales_by_name(Name_Amount *name_amount, int *name_amount_cnt, int records_cnt,
-                             const char *db_path);
+ErrorCode max_sales(const char *db_path);
 
-void max_sales(const char *db_path);
-
-void parse_data_from_string(char *line, Data *data);
+ErrorCode parse_data_from_string(char *line, Data *data);
 
 int get_records_count_in_file(const char *db_path);
+
+char *stringToLower(char *string);
+
+void set_current_time(Data *data);
 
 void print_data(Data data);
 
