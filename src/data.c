@@ -6,6 +6,23 @@
 #include <time.h>
 #include <unistd.h>
 
+void try(ErrorCode error) {
+    if (error == OK) return;
+    if (error == DB_IO_ERROR) {
+        puckxit();
+    }
+    if (error == NO_DATA) {
+        print_no_data_message();
+        return;
+    }
+    if (error == INVALID_DATA) {
+        puckxit();
+    }
+    if (error == INVALID_INPUT) {
+        puckxit();
+    }
+}
+
 void puckxit() {
     fprintf(stderr, "Puck you, Verter!");
     exit(EXIT_FAILURE);
@@ -18,19 +35,21 @@ char *stringToLower(char *string) {
     return string;
 }
 
-int isValidCommand(char *command) {
+ErrorCode isValidCommand(char *command) {
     if (strcmp(command, "SHOW") == 0 || strcmp(command, "ADD") == 0 || strcmp(command, "FIND") == 0 ||
         strcmp(command, "MAX") == 0 || strcmp(command, "EXIT") == 0)
-        return 1;
-    return 0;
+        return INVALID_INPUT;
+    return OK;
 }
 
-void main_menu_loop(char *db_path) {
+ErrorCode main_menu_loop(char *db_path) {
     int stop = 0;
+    ErrorCode error = OK;
+
     while (!stop) {
         char command[BUFFER] = {0};
         if (scanf("%10s", command) != 1 || !isValidCommand(command)) {
-            puckxit();
+            return INVALID_INPUT;
         }
 
         if (strcmp(command, "SHOW") == 0) {
@@ -39,38 +58,35 @@ void main_menu_loop(char *db_path) {
 
         if (strcmp(command, "ADD") == 0) {
             Data data;
-            if (scanf("%100s %10d", data.name, &data.price) != 2) {
-                puckxit();
-            }
-            add_record_to_file(&data, db_path);
+            if (scanf("%100s %10d", data.name, &data.price) != 2 || data.price < 0) return INVALID_INPUT;
+            if ((error = add_record_to_file(&data, db_path))) return error;
         }
 
         if (strcmp(command, "FIND") == 0) {
             Data data;
-            if (scanf("%2d.%2d.%4d", &data.day, &data.month, &data.year) != 3) {
-                puckxit();
-            }
-            int records_found = find_record_by_date(&data, db_path);
-            if (records_found == 0) {
-                print_no_data_message();
-            }
+            if (scanf("%2d.%2d.%4d", &data.day, &data.month, &data.year) != 3 || data.day < 1 ||
+                data.month < 1 || data.year < 1)
+                return INVALID_INPUT;
+            if ((error = find_record_by_date(&data, db_path))) return error;
         }
         if (strcmp(command, "MAX") == 0) {
-            max_sales(db_path);
+            if ((error = max_sales(db_path))) return error;
         }
 
         if (strcmp(command, "EXIT") == 0) {
             stop = 1;
         }
     }
+    return error;
 }
-void check_db_path(char *db_path, const char *filename) {
+ErrorCode check_db_path(char *db_path, const char *filename) {
     strcpy(db_path, filename);
     FILE *pfile = open_file(db_path, "a");
     fclose(pfile);
     if (access(db_path, F_OK) != 0) {
-        puckxit();
+        return DB_IO_ERROR;
     }
+    return OK;
 }
 
 FILE *open_file(const char *db_path, const char *mode) {
@@ -94,21 +110,27 @@ void set_current_time(Data *data) {
     data->second = tm->tm_sec;
 }
 
-void add_record_to_file(Data *data, const char *db_path) {
+ErrorCode add_record_to_file(Data *data, const char *db_path) {
     FILE *pfile = open_file(db_path, "a+");
+    if (pfile == NULL) return DB_IO_ERROR;
+
     set_current_time(data);
     fprintf(pfile, "%02d.%02d.%04d %02d:%02d:%02d %s %d\n", data->day, data->month, data->year, data->hour,
             data->minute, data->second, data->name, data->price);
     fclose(pfile);
+    return OK;
 }
 
-void parse_data_from_string(char *line, Data *data) {
-    sscanf(line, "%2d.%2d.%4d %2d:%2d:%2d %100s %10d", &data->day, &data->month, &data->year, &data->hour,
-           &data->minute, &data->second, data->name, &data->price);
+ErrorCode parse_data_from_string(char *line, Data *data) {
+    if (sscanf(line, "%2d.%2d.%4d %2d:%2d:%2d %100s %10d", &data->day, &data->month, &data->year, &data->hour,
+               &data->minute, &data->second, data->name, &data->price) != 8)
+        return INVALID_DATA;
+    return OK;
 }
 
-int find_record_by_date(Data *date_to_find, const char *db_path) {
+ErrorCode find_record_by_date(Data *date_to_find, const char *db_path) {
     FILE *pfile = open_file(db_path, "r");
+    if (pfile == NULL) return DB_IO_ERROR;
     int records_found = 0;
     char line[BUFFER];
     while (fgets(line, BUFFER - 1, pfile) != NULL) {
@@ -121,17 +143,20 @@ int find_record_by_date(Data *date_to_find, const char *db_path) {
         }
     }
     fclose(pfile);
-    return records_found;
+    if (records_found == 0) return NO_DATA;
+    return OK;
 }
 
-void aggregate_sales_by_name(Name_Amount *name_amount, int *name_amount_cnt, int records_cnt,
-                             const char *db_path) {
+ErrorCode aggregate_sales_by_name(Name_Amount *name_amount, int *name_amount_cnt, int records_cnt,
+                                  const char *db_path) {
     FILE *pfile = open_file(db_path, "r");
+    if (pfile == NULL) return DB_IO_ERROR;
     for (int i = 0; i < records_cnt; ++i) {
+        ErrorCode error;
         char line[BUFFER];
         fgets(line, BUFFER - 1, pfile);
         Data data;
-        parse_data_from_string(line, &data);
+        if ((error = parse_data_from_string(line, &data))) return error;
         int name_exists = 0;
         for (int j = 0; j < *name_amount_cnt; ++j) {
             if (strcmp(stringToLower(data.name), name_amount[j].name) == 0) {
@@ -147,13 +172,13 @@ void aggregate_sales_by_name(Name_Amount *name_amount, int *name_amount_cnt, int
         }
     }
     fclose(pfile);
+    return OK;
 }
 
-void max_sales(const char *db_path) {
+ErrorCode max_sales(const char *db_path) {
     int records_cnt = get_records_count_in_file(db_path);
     if (records_cnt == 0) {
-        print_no_data_message();
-        return;
+        return NO_DATA;
     }
 
     Name_Amount *name_amount = (Name_Amount *)malloc(records_cnt * sizeof(Name_Amount));
@@ -173,6 +198,7 @@ void max_sales(const char *db_path) {
         }
     }
     free(name_amount);
+    return OK;
 }
 
 int get_records_count_in_file(const char *db_path) {
