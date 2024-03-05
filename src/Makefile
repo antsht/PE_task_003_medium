@@ -9,17 +9,17 @@ build: clean simple_db simple_db_find not_simple_db
 
 rebuild: clean_all simple_db simple_db_find not_simple_db clean
 
-simple_db: clean simple_db.c data.c 
-	$(CC) $(CFLAGS) simple_db.c data.c  -o  $(BUILD_PATH)simple_db 
-	$(CC) $(CFLAGS) $(EXTRAFLAGS)  simple_db.c data.c  -o  $(BUILD_PATH)simple_db_extra 
+simple_db: clean simple_db.c data.c errors.c
+	$(CC) $(CFLAGS) simple_db.c data.c errors.c -o  $(BUILD_PATH)simple_db 
+	$(CC) $(CFLAGS) $(EXTRAFLAGS)  simple_db.c data.c errors.c -o  $(BUILD_PATH)simple_db_extra 
 
-simple_db_find: clean simple_db.c data.c 
-	$(CC) $(CFLAGS) simple_db.c data.c  -o  $(BUILD_PATH)simple_db_find 
-	$(CC) $(CFLAGS) $(EXTRAFLAGS)  simple_db.c data.c  -o  $(BUILD_PATH)simple_db_find_extra 
+simple_db_find: clean simple_db.c data.c errors.c
+	$(CC) $(CFLAGS) simple_db.c data.c errors.c -o  $(BUILD_PATH)simple_db_find 
+	$(CC) $(CFLAGS) $(EXTRAFLAGS)  simple_db.c data.c errors.c -o  $(BUILD_PATH)simple_db_find_extra 
 
-not_simple_db: clean simple_db.c data.c 
-	$(CC) $(CFLAGS) simple_db.c data.c  -o  $(BUILD_PATH)not_simple_db 
-	$(CC) $(CFLAGS) $(EXTRAFLAGS)  simple_db.c data.c  -o  $(BUILD_PATH)not_simple_db_extra 
+not_simple_db: clean simple_db.c data.c errors.c
+	$(CC) $(CFLAGS) simple_db.c data.c errors.c -o  $(BUILD_PATH)not_simple_db 
+	$(CC) $(CFLAGS) $(EXTRAFLAGS)  simple_db.c data.c errors.c -o  $(BUILD_PATH)not_simple_db_extra 
 
 clean_all:
 	rm -rf *.o *.a *.so $(BUILD_PATH)*

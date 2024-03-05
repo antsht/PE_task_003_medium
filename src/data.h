@@ -1,10 +1,13 @@
 #ifndef DATA_H
 #define DATA_H
-
-#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <unistd.h>
+#include <ctype.h>
+
+#include "errors.h"
 
 #define MAX_RECORDS 1000000
 #define MAX_NAME_LEN 100
@@ -27,25 +30,13 @@ typedef struct {
     int amount;
 } Name_Amount;
 
-typedef enum { OK, DB_IO_ERROR, NO_DATA, INVALID_DATA, INVALID_INPUT } ErrorCode;
-
-char *stringToLower(char *string);
-
-void try(ErrorCode error);
-
-void puckxit();
-
 ErrorCode isValidCommand(char *command);
-
-void print_no_data_message();
 
 ErrorCode main_menu_loop(char *db_path);
 
 ErrorCode check_db_path(char *db_path, const char *filename);
 
 FILE *open_file(const char *db_path, const char *mode);
-
-void set_current_time(Data *data);
 
 ErrorCode add_record_to_file(Data *record_to_write, const char *db_path);
 
@@ -59,6 +50,10 @@ ErrorCode max_sales(const char *db_path);
 ErrorCode parse_data_from_string(char *line, Data *data);
 
 int get_records_count_in_file(const char *db_path);
+
+char *stringToLower(char *string);
+
+void set_current_time(Data *data);
 
 void print_data(Data data);
 
