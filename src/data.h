@@ -1,11 +1,11 @@
 #ifndef DATA_H
 #define DATA_H
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include <ctype.h>
 
 #include "errors.h"
 

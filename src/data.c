@@ -1,7 +1,5 @@
 #include "data.h"
 
-
-
 char *stringToLower(char *string) {
     for (char *c = string; *c; c++) *c = tolower(*c);
     return string;
